@@ -1,66 +1,80 @@
-const API_BASE = "https://shein-monitor-backend-production.up.railway.app";
+const API = "https://shein-monitor-backend-production.up.railway.app";
 
-// ====== 页面初始化 ======
-document.addEventListener("DOMContentLoaded", () => {
-    loadDashboard();
+// =====================
+// loading
+// =====================
+function setLoading(id, text) {
+  document.getElementById(id).innerText = text;
+}
 
-    // 每30秒自动刷新（实时看板）
-    setInterval(loadDashboard, 30000);
-
-    // 绑定按钮
-    bindEvents();
-});
-
-// ====== 加载 dashboard ======
+// =====================
+// dashboard
+// =====================
 async function loadDashboard() {
-    try {
-        const res = await fetch(`${API_BASE}/dashboard/`);
-        const data = await res.json();
+  try {
+    const res = await fetch(`${API}/orders/dashboard/`);
+    const json = await res.json();
 
-        console.log("dashboard数据：", data);
+    const d = json.data;
 
-        updateUI(data);
+    document.getElementById("total").innerText = d.total;
+    document.getElementById("eu").innerText = d.eu;
+    document.getElementById("us").innerText = d.us;
+    document.getElementById("ca").innerText = d.ca;
 
-    } catch (err) {
-        console.error("加载失败：", err);
-    }
+  } catch (e) {
+    console.log("dashboard error", e);
+  }
 }
 
-// ====== 更新页面 ======
-function updateUI(data) {
-    setText("total", data.total);
-    setText("eu", data.eu);
-    setText("us", data.us);
-    setText("ca", data.ca);
-    setText("t12", data.t12);
-    setText("t24", data.t24);
-    setText("t36", data.t36);
-    setText("t48", data.t48);
+// =====================
+// orders list
+// =====================
+async function loadOrders() {
+  try {
+    const res = await fetch(`${API}/orders/list/`);
+    const json = await res.json();
+
+    const tbody = document.getElementById("tbody");
+    tbody.innerHTML = "";
+
+    json.data.forEach(o => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${o.order_no}</td>
+          <td>${o.shop_name}</td>
+          <td>${o.region}</td>
+          <td>${o.created_hours}</td>
+          <td>${o.logistics_no || ""}</td>
+        </tr>
+      `;
+    });
+
+  } catch (e) {
+    console.log("orders error", e);
+  }
 }
 
-// ====== 工具：写DOM ======
-function setText(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.innerText = value;
+// =====================
+// export
+// =====================
+function downloadOrders() {
+  window.open(`${API}/orders/export/`, "_blank");
 }
 
-// ====== 事件绑定 ======
-function bindEvents() {
-
-    // 查询按钮（如果你有）
-    const queryBtn = document.getElementById("queryBtn");
-    if (queryBtn) {
-        queryBtn.onclick = loadDashboard;
-    }
-
-    // 导出按钮
-    const exportBtn = document.getElementById("exportBtn");
-    if (exportBtn) {
-        exportBtn.onclick = exportOrders;
-    }
+// =====================
+// refresh
+// =====================
+function refreshAll() {
+  loadDashboard();
+  loadOrders();
 }
 
-// ====== 导出订单 ======
-function exportOrders() {
-    window.open(`${API_BASE}/orders/export/`, "_blank");
-}
+// =====================
+// init
+// =====================
+window.onload = () => {
+  refreshAll();
+
+  setInterval(refreshAll, 10000);
+};
