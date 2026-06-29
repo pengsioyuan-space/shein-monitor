@@ -2,51 +2,37 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>订单风控 Dashboard</title>
-
+  <title>订单风控系统</title>
   <style>
-    body {
-      font-family: Arial;
-      background: #f5f6f8;
-      padding: 20px;
-    }
+    body { font-family: Arial; background:#f5f6f8; padding:20px; }
+    h1 { margin-bottom:20px; }
 
-    h1 {
-      margin-bottom: 20px;
-    }
-
-    .card {
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      display: inline-block;
-      min-width: 200px;
-      margin-right: 10px;
-    }
+    .row { display:flex; gap:10px; margin-bottom:20px; }
+    .card { background:#fff; padding:15px; border-radius:10px; min-width:120px; }
 
     button {
-      padding: 8px 15px;
-      margin: 10px 5px;
-      cursor: pointer;
+      padding:8px 12px;
+      cursor:pointer;
+      border:0;
+      border-radius:6px;
+      background:#2d6cdf;
+      color:#fff;
     }
 
     table {
-      width: 100%;
-      background: white;
-      border-collapse: collapse;
-      margin-top: 20px;
+      width:100%;
+      background:#fff;
+      border-collapse:collapse;
+      margin-top:20px;
     }
 
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
-      text-align: center;
+    th,td {
+      border:1px solid #eee;
+      padding:8px;
+      text-align:center;
     }
 
-    th {
-      background: #f0f0f0;
-    }
+    th { background:#f3f3f3; }
   </style>
 </head>
 
@@ -54,97 +40,98 @@
 
 <h1>📦 订单风控 Dashboard</h1>
 
-<!-- KPI -->
-<div>
-  <div class="card">总订单<br><h2 id="total">0</h2></div>
+<div class="row">
+  <div class="card">Total<br><h2 id="total">0</h2></div>
   <div class="card">EU<br><h2 id="eu">0</h2></div>
   <div class="card">US<br><h2 id="us">0</h2></div>
   <div class="card">CA<br><h2 id="ca">0</h2></div>
 </div>
 
-<!-- 操作 -->
-<button onclick="loadDashboard()">刷新统计</button>
-<button onclick="loadOrders()">刷新订单</button>
+<button onclick="refreshAll()">刷新数据</button>
+<button onclick="downloadOrders()">下载运营订单</button>
 
-<!-- 表格 -->
 <table>
   <thead>
     <tr>
       <th>订单号</th>
       <th>店铺</th>
       <th>区域</th>
-      <th>小时</th>
+      <th>时间</th>
       <th>物流号</th>
     </tr>
   </thead>
-  <tbody id="orders-body"></tbody>
+  <tbody id="tbody"></tbody>
 </table>
 
 <script>
-const API_BASE = "https://shein-monitor-backend-production.up.railway.app";
+
+// 🔥 Railway 后端地址
+const API = "https://shein-monitor-backend-production.up.railway.app";
 
 
-// =======================
-// 📊 加载统计数据
-// =======================
+// =====================
+// 📊 Dashboard
+// =====================
 async function loadDashboard() {
-  try {
-    const res = await fetch(`${API_BASE}/dashboard/`);
-    const data = await res.json();
+  const res = await fetch(`${API}/dashboard/`);
+  const data = await res.json();
 
-    document.getElementById("total").innerText = data.total;
-    document.getElementById("eu").innerText = data.eu;
-    document.getElementById("us").innerText = data.us;
-    document.getElementById("ca").innerText = data.ca;
-
-  } catch (e) {
-    console.error("dashboard error:", e);
-  }
+  document.getElementById("total").innerText = data.total;
+  document.getElementById("eu").innerText = data.eu;
+  document.getElementById("us").innerText = data.us;
+  document.getElementById("ca").innerText = data.ca;
 }
 
 
-// =======================
-// 📦 加载订单列表
-// =======================
+// =====================
+// 📦 Orders
+// =====================
 async function loadOrders() {
-  try {
-    const res = await fetch(`${API_BASE}/orders/`);
-    const json = await res.json();
+  const res = await fetch(`${API}/orders/list/`);
+  const data = await res.json();
 
-    const tbody = document.getElementById("orders-body");
-    tbody.innerHTML = "";
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
 
-    json.data.forEach(o => {
-      const row = `
-        <tr>
-          <td>${o.order_no}</td>
-          <td>${o.shop_name}</td>
-          <td>${o.region}</td>
-          <td>${o.created_hours}</td>
-          <td>${o.logistics_no}</td>
-        </tr>
-      `;
-      tbody.innerHTML += row;
-    });
-
-  } catch (e) {
-    console.error("orders error:", e);
-  }
+  data.data.forEach(o => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${o.order_no}</td>
+        <td>${o.shop_name}</td>
+        <td>${o.region}</td>
+        <td>${o.created_hours}</td>
+        <td>${o.logistics_no || ''}</td>
+      </tr>
+    `;
+  });
 }
 
 
-// =======================
-// 🚀 自动初始化 + 实时刷新
-// =======================
-window.onload = () => {
+// =====================
+// 📥 下载运营订单
+// =====================
+function downloadOrders() {
+  window.open(`${API}/orders/export/`, "_blank");
+}
+
+
+// =====================
+// 🔄 一键刷新
+// =====================
+function refreshAll() {
   loadDashboard();
   loadOrders();
+}
 
-  // 🔥 每5秒自动刷新（实时效果）
-  setInterval(() => {
-    loadDashboard();
-    loadOrders();
-  }, 5000);
+
+// =====================
+// 🚀 自动初始化 + 实时刷新
+// =====================
+window.onload = () => {
+  refreshAll();
+
+  // 每10秒刷新（先稳定，不用太快）
+  setInterval(refreshAll, 10000);
 };
 
 </script>
