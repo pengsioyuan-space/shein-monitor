@@ -1,73 +1,66 @@
 const API_BASE = "https://shein-monitor-backend-production.up.railway.app";
 
-/**
- * =========================
- * 1️⃣ 加载 Dashboard 数据
- * =========================
- */
+// ====== 页面初始化 ======
+document.addEventListener("DOMContentLoaded", () => {
+    loadDashboard();
+
+    // 每30秒自动刷新（实时看板）
+    setInterval(loadDashboard, 30000);
+
+    // 绑定按钮
+    bindEvents();
+});
+
+// ====== 加载 dashboard ======
 async function loadDashboard() {
     try {
         const res = await fetch(`${API_BASE}/dashboard/`);
         const data = await res.json();
 
-        console.log("dashboard data:", data);
+        console.log("dashboard数据：", data);
 
-        // ⚠️ 如果你页面有这些 id，就会自动更新
-        setText("total", data.total);
-        setText("eu", data.eu);
-        setText("us", data.us);
-        setText("ca", data.ca);
-
-        setText("t12", data.t12);
-        setText("t24", data.t24);
-        setText("t36", data.t36);
-        setText("t48", data.t48);
+        updateUI(data);
 
     } catch (err) {
-        console.error("loadDashboard error:", err);
-        alert("加载数据失败");
+        console.error("加载失败：", err);
     }
 }
 
-
-/**
- * =========================
- * 2️⃣ 查询按钮（今天数据刷新）
- * =========================
- */
-async function queryToday() {
-    await loadDashboard();
+// ====== 更新页面 ======
+function updateUI(data) {
+    setText("total", data.total);
+    setText("eu", data.eu);
+    setText("us", data.us);
+    setText("ca", data.ca);
+    setText("t12", data.t12);
+    setText("t24", data.t24);
+    setText("t36", data.t36);
+    setText("t48", data.t48);
 }
 
-
-/**
- * =========================
- * 3️⃣ 导出运营订单 CSV
- * =========================
- */
-function exportOrders() {
-    window.open(`${API_BASE}/export/`, "_blank");
-}
-
-
-/**
- * =========================
- * 4️⃣ 工具函数（防报错）
- * =========================
- */
+// ====== 工具：写DOM ======
 function setText(id, value) {
     const el = document.getElementById(id);
-    if (el) {
-        el.innerText = value ?? 0;
+    if (el) el.innerText = value;
+}
+
+// ====== 事件绑定 ======
+function bindEvents() {
+
+    // 查询按钮（如果你有）
+    const queryBtn = document.getElementById("queryBtn");
+    if (queryBtn) {
+        queryBtn.onclick = loadDashboard;
+    }
+
+    // 导出按钮
+    const exportBtn = document.getElementById("exportBtn");
+    if (exportBtn) {
+        exportBtn.onclick = exportOrders;
     }
 }
 
-
-/**
- * =========================
- * 5️⃣ 页面自动加载
- * =========================
- */
-document.addEventListener("DOMContentLoaded", () => {
-    loadDashboard();
-});
+// ====== 导出订单 ======
+function exportOrders() {
+    window.open(`${API_BASE}/orders/export/`, "_blank");
+}
