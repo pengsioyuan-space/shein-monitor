@@ -1,4 +1,4 @@
-const API_BASE = "https://shein-monitor-backend-production.up.railway.app/orders";
+const API_BASE = "https://shein-monitor-backend-production.up.railway.app";
 
 let riskChart = null;
 let regionChart = null;
@@ -186,7 +186,7 @@ function updateRegionChart(data) {
 
 async function loadDashboard() {
   const query = getTimeQuery();
-#这里是dashboard的api
+
   const data = await fetchJSON(`${API_BASE}/orders/dashboard/${query}`);
 
   setText("total", data.total);
@@ -206,6 +206,7 @@ async function loadDashboard() {
 
 async function loadOrders() {
   const query = getTimeQuery({ limit: 100 });
+
   const data = await fetchJSON(`${API_BASE}/orders/list/${query}`);
 
   const tbody = document.getElementById("orders-body");
@@ -250,6 +251,7 @@ async function refreshAll() {
 
 function downloadOrders() {
   const query = getTimeQuery();
+
   window.open(`${API_BASE}/orders/export/${query}`, "_blank");
 }
 
@@ -268,6 +270,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
   refreshAll();
 
-  // 前端每5分钟刷新数据库展示，不触发妙手同步
   setInterval(refreshAll, 5 * 60 * 1000);
 });
