@@ -1,80 +1,104 @@
-const API = "https://shein-monitor-backend-production.up.railway.app";
+const API_BASE = "https://shein-monitor-backend-production.up.railway.app";
 
-// =====================
-// loading
-// =====================
-function setLoading(id, text) {
-  document.getElementById(id).innerText = text;
+async function fetchJSON(url) {
+  const res = await fetch(url, {
+    method: "GET",
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: ${url}`);
+  }
+
+  return await res.json();
 }
 
-// =====================
-// dashboard
-// =====================
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.textContent = value ?? 0;
+  }
+}
+
 async function loadDashboard() {
   try {
-    const res = await fetch(`${API}/orders/dashboard/`);
-    const json = await res.json();
+    const data = await fetchJSON(`${API_BASE}/`);
 
-    const d = json.data;
+    console.log("dashboard data:", data);
 
-    document.getElementById("total").innerText = d.total;
-    document.getElementById("eu").innerText = d.eu;
-    document.getElementById("us").innerText = d.us;
-    document.getElementById("ca").innerText = d.ca;
+    setText("total", data.total);
+    setText("eu", data.eu);
+    setText("us", data.us);
+    setText("ca", data.ca);
 
-  } catch (e) {
-    console.log("dashboard error", e);
+    setText("t12", data.t12);
+    setText("t24", data.t24);
+    setText("t36", data.t36);
+    setText("t48", data.t48);
+  } catch (err) {
+    console.error("加载 dashboard 失败：", err);
   }
 }
 
-// =====================
-// orders list
-// =====================
 async function loadOrders() {
   try {
-    const res = await fetch(`${API}/orders/list/`);
-    const json = await res.json();
+    let data;
 
-    const tbody = document.getElementById("tbody");
+    try {
+      data = await fetchJSON(`${API_BASE}/orders/list/`);
+    } catch (e) {
+      console.warn("orders/list 失败，跳过订单表：", e);
+      return;
+    }
+
+    console.log("orders data:", data);
+
+    const tbody = document.getElementById("orders-body");
+    if (!tbody) return;
+
     tbody.innerHTML = "";
 
-    json.data.forEach(o => {
-      tbody.innerHTML += `
-        <tr>
-          <td>${o.order_no}</td>
-          <td>${o.shop_name}</td>
-          <td>${o.region}</td>
-          <td>${o.created_hours}</td>
-          <td>${o.logistics_no || ""}</td>
-        </tr>
-      `;
-    });
+    const orders = Array.isArray(data) ? data : data.orders || data.results || [];
 
-  } catch (e) {
-    console.log("orders error", e);
+    orders.forEach((item) => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${item.order_no || item["订单编号"] || ""}</td>
+        <td>${item.shop_name || item["店铺"] || ""}</td>
+        <td>${item.region || ""}</td>
+        <td>${item.created_hours || item["已创建小时数"] || ""}</td>
+        <td>${item.logistics_no || item["物流单号"] || ""}</td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error("加载订单列表失败：", err);
   }
 }
 
-// =====================
-// export
-// =====================
-function downloadOrders() {
-  window.open(`${API}/orders/export/`, "_blank");
-}
-
-// =====================
-// refresh
-// =====================
 function refreshAll() {
   loadDashboard();
   loadOrders();
 }
 
-// =====================
-// init
-// =====================
-window.onload = () => {
+function downloadOrders() {
+  window.open(`${API_BASE}/orders/export/`, "_blank");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
   refreshAll();
 
+  const refreshBtn = document.getElementById("refresh-btn");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", refreshAll);
+  }
+
+  const downloadBtn = document.getElementById("download-btn");
+  if (downloadBtn) {
+    downloadBtn.addEventListener("click", downloadOrders);
+  }
+
   setInterval(refreshAll, 10000);
-};
+});
