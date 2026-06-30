@@ -186,7 +186,8 @@ function updateRegionChart(data) {
 
 async function loadDashboard() {
   const query = getTimeQuery();
-  const data = await fetchJSON(`${API_BASE}/dashboard/${query}`);
+#这里是dashboard的api
+  const data = await fetchJSON(`${API_BASE}/orders/dashboard/${query}`);
 
   setText("total", data.total);
   setText("eu", data.eu);
