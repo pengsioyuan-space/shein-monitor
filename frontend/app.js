@@ -46,6 +46,19 @@ function setDefaultTimeRange() {
 }
 
 function getTimeQuery(extra = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(extra).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      params.append(key, value);
+    }
+  });
+
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
+function getTimeQueryForOrders(extra = {}) {
   const start = document.getElementById("start-time")?.value;
   const end = document.getElementById("end-time")?.value;
 
@@ -70,6 +83,8 @@ function getTimeQuery(extra = {}) {
 }
 
 async function fetchJSON(url) {
+  console.log("请求接口：", url);
+
   const res = await fetch(url, {
     method: "GET",
     cache: "no-store",
@@ -185,9 +200,10 @@ function updateRegionChart(data) {
 }
 
 async function loadDashboard() {
-  const query = getTimeQuery();
+  // Dashboard 读统计快照，不带时间参数，避免因为时间筛选导致全 0
+  const data = await fetchJSON(`${API_BASE}/orders/dashboard/`);
 
-  const data = await fetchJSON(`${API_BASE}/orders/dashboard/${query}`);
+  console.log("dashboard data:", data);
 
   setText("total", data.total);
   setText("eu", data.eu);
@@ -205,9 +221,12 @@ async function loadDashboard() {
 }
 
 async function loadOrders() {
-  const query = getTimeQuery({ limit: 100 });
+  // 订单列表可以带时间筛选
+  const query = getTimeQueryForOrders({ limit: 100 });
 
   const data = await fetchJSON(`${API_BASE}/orders/list/${query}`);
+
+  console.log("orders data:", data);
 
   const tbody = document.getElementById("orders-body");
   if (!tbody) return;
@@ -250,8 +269,7 @@ async function refreshAll() {
 }
 
 function downloadOrders() {
-  const query = getTimeQuery();
-
+  const query = getTimeQueryForOrders();
   window.open(`${API_BASE}/orders/export/${query}`, "_blank");
 }
 
@@ -270,5 +288,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   refreshAll();
 
+  // 前端每5分钟刷新数据库展示，不触发妙手同步
   setInterval(refreshAll, 5 * 60 * 1000);
 });
