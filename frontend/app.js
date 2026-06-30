@@ -135,6 +135,9 @@ function updateRiskChart(data) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: {
+        padding: 10,
+      },
       plugins: {
         legend: {
           display: true,
@@ -185,6 +188,9 @@ function updateRegionChart(data) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: {
+        padding: 10,
+      },
       plugins: {
         legend: {
           display: true,
@@ -200,8 +206,7 @@ function updateRegionChart(data) {
 }
 
 async function loadDashboard() {
-  // Dashboard 读统计快照，不带时间参数，避免因为时间筛选导致全 0
-  const data = await fetchJSON(`${API_BASE}/orders/dashboard/`);
+  const data = await fetchJSON(`${API_BASE}/orders/dashboard/?ts=${Date.now()}`);
 
   console.log("dashboard data:", data);
 
@@ -221,8 +226,10 @@ async function loadDashboard() {
 }
 
 async function loadOrders() {
-  // 订单列表可以带时间筛选
-  const query = getTimeQueryForOrders({ limit: 100 });
+  const query = getTimeQueryForOrders({
+    limit: 100,
+    ts: Date.now(),
+  });
 
   const data = await fetchJSON(`${API_BASE}/orders/list/${query}`);
 
@@ -269,7 +276,10 @@ async function refreshAll() {
 }
 
 function downloadOrders() {
-  const query = getTimeQueryForOrders();
+  const query = getTimeQueryForOrders({
+    ts: Date.now(),
+  });
+
   window.open(`${API_BASE}/orders/export/${query}`, "_blank");
 }
 
