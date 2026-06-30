@@ -41,15 +41,27 @@
   </div>
 
   <div class="row">
-    <div class="card"><span>12h+</span><h2 id="t12">0</h2></div>
-    <div class="card"><span>24h+</span><h2 id="t24">0</h2></div>
-    <div class="card"><span>36h+</span><h2 id="t36">0</h2></div>
-    <div class="card"><span>48h+</span><h2 id="t48">0</h2></div>
+<div class="card">即将处理超时<br><h2 id="pending-process-risk">0</h2></div>
+<div class="card">即将发货超时<br><h2 id="pending-ship-risk">0</h2></div>
+<div class="card">即将预约取件超时<br><h2 id="pickup-appointment-risk">0</h2></div>
+<div class="card">即将揽收超时<br><h2 id="pickup-risk">0</h2></div>
   </div>
 
   <div class="row">
-    <button id="refresh-btn">刷新数据</button>
-    <button id="download-btn">下载运营订单</button>
+   <div class="toolbar">
+  <label>
+    开始时间：
+    <input type="datetime-local" id="start-time">
+  </label>
+
+  <label>
+    结束时间：
+    <input type="datetime-local" id="end-time">
+  </label>
+
+  <button onclick="refreshAll()">刷新数据</button>
+  <button onclick="downloadOrders()">下载运营订单</button>
+</div>
   </div>
 
   <div class="charts">
