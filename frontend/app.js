@@ -1,4 +1,4 @@
-const API_BASE = "https://shein-monitor-backend-production.up.railway.app";
+const API_BASE = "https://shein-monitor-backend-production.up.railway.app/orders";
 
 let riskChart = null;
 let regionChart = null;
