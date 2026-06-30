@@ -31,9 +31,73 @@ function setStatus(text, isError = false) {
   el.className = isError ? "status error" : "status";
 }
 
+const API_BASE = "https://shein-monitor-backend-production.up.railway.app";
+
+function getTimeQuery() {
+  const start = document.getElementById("start-time")?.value;
+  const end = document.getElementById("end-time")?.value;
+
+  const params = new URLSearchParams();
+
+  if (start) {
+    params.append("start", start.replace("T", " ") + ":00");
+  }
+
+  if (end) {
+    params.append("end", end.replace("T", " ") + ":00");
+  }
+
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
+async function fetchJSON(url) {
+  const res = await fetch(url, {
+    method: "GET",
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: ${url}`);
+  }
+
+  return await res.json();
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.textContent = value ?? 0;
+  }
+}
+
+function setDefaultTimeRange() {
+  const end = new Date();
+  const start = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+
+  const format = (d) => {
+    const pad = (n) => String(n).padStart(2, "0");
+
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const startInput = document.getElementById("start-time");
+  const endInput = document.getElementById("end-time");
+
+  if (startInput && !startInput.value) {
+    startInput.value = format(start);
+  }
+
+  if (endInput && !endInput.value) {
+    endInput.value = format(end);
+  }
+}
+
 async function loadDashboard() {
   try {
-    const data = await fetchJSON(`${API_BASE}/`);
+    const query = getTimeQuery();
+    const data = await fetchJSON(`${API_BASE}/dashboard/${query}`);
+
     console.log("dashboard data:", data);
 
     setText("total", data.total);
@@ -41,17 +105,66 @@ async function loadDashboard() {
     setText("us", data.us);
     setText("ca", data.ca);
     setText("other", data.other);
-    setText("t12", data.t12);
-    setText("t24", data.t24);
-    setText("t36", data.t36);
-    setText("t48", data.t48);
 
-    setStatus(`已刷新：${new Date().toLocaleString()}`);
+    setText("pending-process-risk", data.pending_process_risk);
+    setText("pending-ship-risk", data.pending_ship_risk);
+    setText("pickup-appointment-risk", data.pickup_appointment_risk);
+    setText("pickup-risk", data.pickup_risk);
+
+    updateCharts(data);
   } catch (err) {
-    console.error("加载 dashboard 失败：", err);
-    setStatus("Dashboard 加载失败，检查后端或 CORS", true);
+    console.error("Dashboard 加载失败：", err);
   }
 }
+
+async function loadOrders() {
+  try {
+    const query = getTimeQuery();
+    const data = await fetchJSON(`${API_BASE}/orders/list/${query}`);
+
+    const tbody = document.getElementById("orders-body");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    const orders = Array.isArray(data)
+      ? data
+      : data.data || data.orders || data.results || [];
+
+    orders.forEach((item) => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${item.order_no || ""}</td>
+        <td>${item.shop_name || ""}</td>
+        <td>${item.region || ""}</td>
+        <td>${item.created_hours || ""}</td>
+        <td>${item.logistics_no || ""}</td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error("订单列表加载失败：", err);
+  }
+}
+
+function refreshAll() {
+  loadDashboard();
+  loadOrders();
+}
+
+function downloadOrders() {
+  const query = getTimeQuery();
+  window.open(`${API_BASE}/orders/export/${query}`, "_blank");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  setDefaultTimeRange();
+  refreshAll();
+
+  setInterval(refreshAll, 5 * 60 * 1000);
+});
 
 async function loadOrders() {
   try {
